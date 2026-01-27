@@ -74,7 +74,9 @@ export const evaluateProject = (ctx: EvaluationContext): EvaluationResult => {
     // 3. Evaluate Section Completion (C.6)
     const completedSections: string[] = [];
 
-    sections.forEach(section => {
+    const activeSections = sections.filter(s => s.status !== 'draft');
+
+    activeSections.forEach(section => {
         // A section is complete if all REQUIRED, VISIBLE questions have VALID, APPROVED answers.
         const requiredVisibleQs = section.required_question_ids.filter(qid => visibleQuestions.includes(qid));
 
@@ -147,7 +149,7 @@ export const evaluateProject = (ctx: EvaluationContext): EvaluationResult => {
     // Iterate all visible questions in active scopes (assuming all sections belong to a stage?)
     // For POC: Iterate all sections. If a section is incomplete, generate actions for missing Qs.
 
-    sections.forEach(section => {
+    activeSections.forEach(section => {
         // If section is NOT complete, find out why
         if (!completedSections.includes(section.id)) {
             const requiredVisibleQs = section.required_question_ids.filter(qid => visibleQuestions.includes(qid));

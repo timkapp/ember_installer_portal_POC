@@ -93,6 +93,7 @@ export interface Stage {
     activation_rules: Record<string, any>;
     section_ids: string[];
     stage_type: 'terminal' | 'reentrant';
+    status: 'active' | 'draft';
 }
 
 // B.3.5 StageAssignment (Derived)
@@ -139,6 +140,7 @@ export interface Section {
         operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'true' | 'false';
         value: any;
     };
+    status: 'active' | 'draft';
 }
 
 // B.5.1 Submission

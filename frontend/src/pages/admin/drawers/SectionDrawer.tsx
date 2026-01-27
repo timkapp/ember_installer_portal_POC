@@ -44,6 +44,17 @@ const SectionDrawer: React.FC<SectionDrawerProps> = ({ open, onClose, section, a
                     onChange={(e) => setLocalSection({ ...localSection, description: e.target.value })}
                 />
 
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={localSection.status !== 'draft'}
+                            onChange={(e) => setLocalSection({ ...localSection, status: e.target.checked ? 'active' : 'draft' })}
+                            color="success"
+                        />
+                    }
+                    label={localSection.status === 'draft' ? "Status: Draft (Paused)" : "Status: Active (Live)"}
+                />
+
                 <FormControl fullWidth>
                     <InputLabel>Prerequisite Sections</InputLabel>
                     <Select

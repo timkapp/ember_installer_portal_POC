@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard';
 
 
 import DataCollectionConfig from './pages/admin/DataCollectionConfig';
-import StagesConfig from './pages/admin/StagesConfig';
+
 import NewProjectWizard from './pages/installer/NewProjectWizard';
 
 // Placeholder for Login
@@ -40,7 +40,7 @@ function App() {
 
               {/* Admin Configuration Routes */}
               <Route path="admin/data-collection" element={<DataCollectionConfig />} />
-              <Route path="admin/stages" element={<StagesConfig />} />
+
 
               {/* Debug */}
               <Route path="debug/evaluation" element={<EvaluationDebugger />} />
