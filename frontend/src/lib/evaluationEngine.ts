@@ -96,38 +96,40 @@ export const evaluateProject = (ctx: EvaluationContext): EvaluationResult => {
         }
     });
 
-    // 4. Evaluate Stage Activation (C.7)
-    // For POC, simplify: All stages are active? Or stages depend on sections?
-    // "Each Stage defines its own activation_rules" (C.7.1)
-    // Let's assume stages are active if their previous stage is done OR no rules.
+    // 4. Derive Phase: Identify Completed Stages
+    // A stage is complete if ALL its assigned sections are complete.
+    const completedStages: string[] = [];
+    stages.forEach(stage => {
+        const assignedSections = stage.section_ids || [];
+        if (assignedSections.length > 0) {
+            const allSectionsComplete = assignedSections.every(secId => completedSections.includes(secId));
+            if (allSectionsComplete) {
+                completedStages.push(stage.id);
+            }
+        }
+        // If stage has no sections, is it auto-complete? Or manual? 
+        // For now, if no sections, it's never "completed" by logic, essentially a container that might be manually managed.
+    });
+
+
+    // 5. Evaluate Stage Activation (C.7)
     const activeStages: string[] = [];
     stages.forEach(stage => {
-        // Mock Rule: Active if "system_size > 0" or always active?
-        // Let's rely on config. For POC, let's say "Site Survey" is active if "General Info" section is complete.
-        // We need a way to define this in our mock data.
-
-        // SIMPLE LOGIC FOR POC:
-        // If stage has no rules, it's active.
-        // If stage rules require a section, check it.
-        // Rule: Active if NO rules, OR if ALL required sections are complete.
+        // Rule: Active if NO rules, OR if ALL required sections/stages are complete.
         if (!stage.activation_rules || Object.keys(stage.activation_rules).length === 0) {
             activeStages.push(stage.id);
         } else {
-            // Check required_section_ids (Array)
-            const requiredSectionIds = stage.activation_rules['required_section_ids'];
-
-            // Backward compatibility for POC (remove if no longer needed, but safer to keep for now)
-            const legacyRequiredId = stage.activation_rules['required_section_id'];
+            // Check required_section_ids
+            // REMOVED per user request (Stages only depend on Stages)
+            // const requiredSectionIds = stage.activation_rules['required_section_ids'];
+            const requiredStageIds = stage.activation_rules['required_stage_ids'];
 
             let rulesMet = true;
 
-            if (Array.isArray(requiredSectionIds) && requiredSectionIds.length > 0) {
-                const allSectionsDone = requiredSectionIds.every(id => completedSections.includes(id));
-                if (!allSectionsDone) rulesMet = false;
-            } else if (legacyRequiredId) {
-                if (!completedSections.includes(legacyRequiredId)) rulesMet = false;
-            } else {
-                // Rules existing but empty requirements? Treat as active (default fallthrough is true)
+            // Check Stage Dependencies
+            if (Array.isArray(requiredStageIds) && requiredStageIds.length > 0) {
+                const allStagesDone = requiredStageIds.every(id => completedStages.includes(id));
+                if (!allStagesDone) rulesMet = false;
             }
 
             if (rulesMet) {
@@ -136,7 +138,7 @@ export const evaluateProject = (ctx: EvaluationContext): EvaluationResult => {
         }
     });
 
-    // 5. Derive Required Actions (C.8)
+    // 6. Derive Required Actions (C.8)
     const requiredActions: RequiredAction[] = [];
 
     // For every active stage... (actually actions are usually tied to Sections in that stage, or questions)

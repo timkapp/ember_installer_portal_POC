@@ -91,6 +91,7 @@ export interface Stage {
     name: string;
     description: string;
     activation_rules: Record<string, any>;
+    section_ids: string[];
     stage_type: 'terminal' | 'reentrant';
 }
 

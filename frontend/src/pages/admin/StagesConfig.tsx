@@ -40,7 +40,7 @@ const StagesConfig: React.FC = () => {
     }, []);
 
     const handleAdd = () => {
-        setCurrentStage({ stage_type: 'reentrant', activation_rules: {} });
+        setCurrentStage({ stage_type: 'reentrant', activation_rules: {}, section_ids: [] });
         setDrawerOpen(true);
     };
 
@@ -175,6 +175,39 @@ const StagesConfig: React.FC = () => {
                         ))}
                     </TextField>
 
+                    <TextField
+                        select
+                        label="Assigned Sections"
+                        fullWidth
+                        SelectProps={{
+                            multiple: true,
+                            renderValue: (selected: any) => {
+                                const selectedIds = selected as string[];
+                                return (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {selectedIds.map((id) => (
+                                            <Box key={id} sx={{ bgcolor: 'primary.main', color: 'white', px: 1, borderRadius: 1, fontSize: '0.75rem' }}>
+                                                {sections.find(s => s.id === id)?.name || id}
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                )
+                            }
+                        }}
+                        value={currentStage.section_ids || []}
+                        onChange={(e) => {
+                            const val = typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value;
+                            setCurrentStage({ ...currentStage, section_ids: val });
+                        }}
+                        helperText="Select the sections that belong to this stage."
+                    >
+                        {sections.map((s) => (
+                            <MenuItem key={s.id} value={s.id}>
+                                {s.name}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+
                     {/* Rules Builder */}
                     <Box sx={{ border: '1px solid #eee', p: 2, borderRadius: 1, mt: 1 }}>
                         <Typography variant="subtitle2" gutterBottom>Activation Rules</Typography>
@@ -182,10 +215,13 @@ const StagesConfig: React.FC = () => {
                             Define when this stage becomes active.
                         </Typography>
 
+
+
                         <TextField
                             select
-                            label="Prerequisite Sections"
+                            label="Prerequisite Stages"
                             fullWidth
+                            sx={{ mt: 2 }}
                             SelectProps={{
                                 multiple: true,
                                 renderValue: (selected: any) => {
@@ -193,31 +229,34 @@ const StagesConfig: React.FC = () => {
                                     return (
                                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                             {selectedIds.map((id) => (
-                                                <Box key={id} sx={{ bgcolor: 'primary.light', color: 'white', px: 1, borderRadius: 1, fontSize: '0.75rem' }}>
-                                                    {sections.find(s => s.id === id)?.name || id}
+                                                <Box key={id} sx={{ bgcolor: 'warning.light', color: 'black', px: 1, borderRadius: 1, fontSize: '0.75rem' }}>
+                                                    {stages.find(s => s.id === id)?.name || id}
                                                 </Box>
                                             ))}
                                         </Box>
                                     )
                                 }
                             }}
-                            value={currentStage.activation_rules?.required_section_ids || []}
+                            value={currentStage.activation_rules?.required_stage_ids || []}
                             onChange={(e) => {
                                 const val = typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value;
                                 setCurrentStage({
                                     ...currentStage,
                                     activation_rules: {
                                         ...currentStage.activation_rules,
-                                        required_section_ids: val
+                                        required_stage_ids: val
                                     }
                                 });
                             }}
                         >
-                            {sections.map((s) => (
-                                <MenuItem key={s.id} value={s.id}>
-                                    {s.name}
-                                </MenuItem>
-                            ))}
+                            {stages
+                                .filter(s => s.id !== currentStage.id) // Prevent self-dependency
+                                .map((s) => (
+                                    <MenuItem key={s.id} value={s.id}>
+                                        {s.name}
+                                    </MenuItem>
+                                ))
+                            }
                         </TextField>
                     </Box>
 
