@@ -278,7 +278,7 @@ const DataCollectionConfig: React.FC = () => {
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Data Collection Config</Typography>
+                <Typography variant="h4">Question & Section Config</Typography>
                 <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddSection}>
                     Add Section
                 </Button>

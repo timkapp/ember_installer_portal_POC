@@ -115,7 +115,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, handleDrawerToggle }) => 
                     <ListItem disablePadding>
                         <ListItemButton onClick={() => handleNavigation('/admin/data-collection')}>
                             <ListItemIcon><SettingsIcon sx={{ color: 'error.light' }} /></ListItemIcon>
-                            <ListItemText primary="Data Collection Config" secondary="Questions, Sections" secondaryTypographyProps={{ sx: { color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' } }} />
+                            <ListItemText primary="Question Config" secondary="Questions, Sections" secondaryTypographyProps={{ sx: { color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' } }} />
                         </ListItemButton>
                     </ListItem>
                     <ListItem disablePadding>

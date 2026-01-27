@@ -105,6 +105,39 @@ const QuestionDrawer: React.FC<QuestionDrawerProps> = ({ open, onClose, question
                     ))}
                 </TextField>
 
+                {localQuestion.question_type === 'file_upload' && (
+                    <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Typography variant="subtitle2">File Upload Constraints</Typography>
+                        <TextField
+                            label="Allowed File Types"
+                            placeholder=".pdf, .jpg, .png"
+                            helperText="Comma separated list of extensions (e.g. .pdf, .jpg)"
+                            fullWidth
+                            size="small"
+                            value={localQuestion.allowed_file_types?.join(', ') || ''}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                const types = val.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                                setLocalQuestion({
+                                    ...localQuestion,
+                                    allowed_file_types: types
+                                });
+                            }}
+                        />
+                        <TextField
+                            label="Max File Size (MB)"
+                            type="number"
+                            size="small"
+                            fullWidth
+                            value={localQuestion.max_file_size_mb || ''}
+                            onChange={(e) => setLocalQuestion({
+                                ...localQuestion,
+                                max_file_size_mb: Number(e.target.value)
+                            })}
+                        />
+                    </Box>
+                )}
+
                 <TextField
                     label="Mapped Canonical Field"
                     fullWidth
