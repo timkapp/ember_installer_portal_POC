@@ -1,0 +1,45 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isInstallerForOrg(orgId) {
+       // Ideally verify user org. In storage rules, we can't easily read firestore.
+       // We usually rely on Custom Claims in the auth token.
+       // request.auth.token.organization_id == orgId
+       return request.auth.token.organization_id == orgId;
+    }
+
+    function isAdmin() {
+      // request.auth.token.role == 'admin' or similar
+      return request.auth.token.isAdmin == true; 
+    }
+
+    // projects/{projectId}/uploads/{questionId}/{submissionId}/{filename}
+    match /projects/{projectId}/uploads/{questionId}/{submissionId}/{filename} {
+      // We need to know the project's orgId. 
+      // Without firestore cleanup, we might rely on metadata or path structure if orgId was in path.
+      // But path is /projects/{projectId}/...
+      // PROTOTYPE HACK: We will allow read/write if the user is authenticated. 
+      // In a real app we'd need Custom Claims or to put orgId in the path.
+      // E.g. /orgs/{orgId}/projects/...
+      
+      // Determine if we can enforce org scope. 
+      // If we assume Custom Claims are set up (which we should do in Functions), then:
+      // allow read: if isInstallerForOrg(resource.metadata.organizationId);
+      
+      // For now, let's just stick to "Auth required" to unblock prototype, 
+      // and add a TODO to implement Custom Claims.
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.resource.size < 25 * 1024 * 1024; // 25MB limit (B.4.1)
+    }
+    
+    // Default block
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# Node
+node_modules/
+dist/
+build/
+.env
+.env.local
+.DS_Store
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# IDE
+.vscode/
+.idea/
+
+# System
+.antigravityignore

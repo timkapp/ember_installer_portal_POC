@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      // In production/prototype, we might store user role in custom claims or look it up.
+      // For now, assuming we look up the installer account or admin account.
+      // Optimally, use custom claims for role to avoid read costs.
+      // For prototype, we'll try to rely on the path or simple checks.
+      return request.auth.token;
+    }
+
+    function isInstallerForOrg(orgId) {
+       // This presumes the auth token has the organization_id claim.
+       // If not, we'd need to get /databases/$(database)/documents/installer_accounts/$(request.auth.uid)
+       // which costs a read. 
+       // For prototype, let's assume we read from the user doc if claims aren't set.
+       return isAuthenticated() && (
+         // Check if the user document exists and has the orgId
+         get(/databases/$(database)/documents/installer_accounts/$(request.auth.uid)).data.organization_id == orgId
+       );
+    }
+    
+    function isAdmin() {
+      // Check if user exists in admin_accounts
+      return isAuthenticated() && exists(/databases/$(database)/documents/admin_accounts/$(request.auth.uid));
+    }
+
+    // E.4 Identity & Access
+    match /installer_orgs/{orgId} {
+      allow read: if isInstallerForOrg(orgId) || isAdmin();
+      allow write: if false; // System/Admin via Admin SDK only
+    }
+
+    match /installer_accounts/{userId} {
+      // Users can read their own account
+      allow read: if request.auth.uid == userId || isAdmin();
+      allow write: if false; // Provisioned by admin
+    }
+
+    match /admin_accounts/{userId} {
+      allow read: if request.auth.uid == userId || isAdmin(); // Admins can read other admins?
+      allow write: if false;
+    }
+
+    match /invitations/{inviteId} {
+      allow read: if isAdmin(); // Public read?? No, by token lookup usually.
+      // For invitation acceptance flow, we might need a function or open read if we query by token.
+      // But usually this is done via a Cloud Function "acceptInvitation".
+      allow write: if false;
+    }
+
+    // E.5 Credit Approvals
+    match /credit_approvals/{approvalId} {
+      // Installers read only their org's approvals
+      allow read: if isInstallerForOrg(resource.data.organization_id) || isAdmin();
+      // Only Admins (or upstream) write
+      allow write: if isAdmin(); 
+    }
+
+    // E.6 Customers
+    match /customers/{customerId} {
+      allow read: if isInstallerForOrg(resource.data.organization_id) || isAdmin();
+      // Installers create customers from approved credit apps (handled via Cloud Function recommended in E.13, 
+      // but if client-side: create only if organization_id matches and credit_approval_id is valid...)
+      // The spec E.13 recommends Cloud Functions for creation. 
+      // So detailed write rules might be "false" if we strictly follow "Cloud Functions (Prototype-Recommended)".
+      // Let's stick to "false" for complex writes and assume Functions usage.
+      allow write: if false; 
+    }
+
+    // E.7 Projects
+    match /projects/{projectId} {
+      allow read: if isInstallerForOrg(resource.data.organization_id) || isAdmin();
+      allow write: if false; // Functions for creation
+      
+      // E.8 Submissions (Subcollection)
+      match /submissions/{submissionId} {
+        // Read: Org members
+        allow read: if isInstallerForOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.organization_id) || isAdmin();
+        
+        // Write: Installers can write 'submitted' state if they own the project
+        // But E.13 recommends `createProject`, `approveSubmission` etc.
+        // However, installers submitting answers usually happens from client.
+        // Spec E.12 says "Writes submissions only for their org’s projects".
+        allow create: if isInstallerForOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.organization_id)
+                      && request.resource.data.state == 'submitted';
+                      
+        // Updates? "Approved submissions are immutable". 
+        // Installers might need to update if rejected? Or create new submission? 
+        // B.5.1 says "Resubmissions create new Submission records". So create only?
+        // E.8.1 says "Resubmission creates a new submission record".
+        // So maybe NO updates allowed for installers.
+        allow update: if false; 
+      }
+    }
+
+    // E.9 Configuration (Admin Managed)
+    match /config_questions/{questionId} {
+      allow read: if isAuthenticated(); // All auth users need to see config?
+      allow write: if isAdmin();
+    }
+    match /config_sections/{sectionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    match /config_stages/{stageId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // E.10 Derived State
+    match /derived/{projectId} {
+      allow read: if isInstallerForOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.organization_id) || isAdmin();
+      allow write: if false; // Server-side only
+    }
+
+    // System
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}
