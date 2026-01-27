@@ -199,7 +199,7 @@ const StagesConfig: React.FC = () => {
                             const val = typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value;
                             setCurrentStage({ ...currentStage, section_ids: val });
                         }}
-                        helperText="Select the sections that belong to this stage."
+                        helperText="Sections that belong to this stage. All assigned sections must be submitted/approved for this stage to be considered 'Complete'."
                     >
                         {sections.map((s) => (
                             <MenuItem key={s.id} value={s.id}>
@@ -258,6 +258,22 @@ const StagesConfig: React.FC = () => {
                                 ))
                             }
                         </TextField>
+
+                        <Box sx={{ mt: 3, p: 2, border: '1px dashed #ccc', borderRadius: 1, bgcolor: 'action.hover' }}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Advanced State Rules (Coming Soon)
+                            </Typography>
+                            <Typography variant="caption" display="block" color="text.disabled" sx={{ mb: 1.5 }}>
+                                Define complex activation rules based on Customer or Project state (e.g., Account 30 days overdue or System underperforming).
+                            </Typography>
+                            <TextField
+                                label="Condition (e.g. project.status == 'active')"
+                                fullWidth
+                                disabled
+                                size="small"
+                                placeholder="Future capability..."
+                            />
+                        </Box>
                     </Box>
 
                     <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
