@@ -55,33 +55,33 @@ const SectionDrawer: React.FC<SectionDrawerProps> = ({ open, onClose, section, a
                     label={localSection.status === 'draft' ? "Status: Draft (Paused)" : "Status: Active (Live)"}
                 />
 
-                <FormControl fullWidth>
-                    <InputLabel>Prerequisite Sections</InputLabel>
-                    <Select
-                        multiple
-                        value={localSection.depends_on_section_ids || []}
-                        onChange={(e) => setLocalSection({ ...localSection, depends_on_section_ids: typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value })}
-                        input={<OutlinedInput label="Prerequisite Sections" />}
-                        renderValue={(selected) => (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {selected.map((value) => (
-                                    <Chip key={value} label={availableSections.find(s => s.id === value)?.name || value} size="small" />
-                                ))}
-                            </Box>
-                        )}
-                    >
-                        {availableSections
-                            .filter(s => s.id !== localSection.id) // Avoid self-dependency
-                            .map((s) => (
-                                <MenuItem key={s.id} value={s.id}>
-                                    {s.name}
-                                </MenuItem>
-                            ))}
-                    </Select>
-                </FormControl>
-
                 <Box sx={{ mt: 2, borderTop: '1px solid #eee', pt: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>Visibility Logic</Typography>
+
+                    <FormControl fullWidth sx={{ mb: 2 }}>
+                        <InputLabel>Prerequisite Sections</InputLabel>
+                        <Select
+                            multiple
+                            value={localSection.depends_on_section_ids || []}
+                            onChange={(e) => setLocalSection({ ...localSection, depends_on_section_ids: typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value })}
+                            input={<OutlinedInput label="Prerequisite Sections" />}
+                            renderValue={(selected) => (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {selected.map((value) => (
+                                        <Chip key={value} label={availableSections.find(s => s.id === value)?.name || value} size="small" />
+                                    ))}
+                                </Box>
+                            )}
+                        >
+                            {availableSections
+                                .filter(s => s.id !== localSection.id) // Avoid self-dependency
+                                .map((s) => (
+                                    <MenuItem key={s.id} value={s.id}>
+                                        {s.name}
+                                    </MenuItem>
+                                ))}
+                        </Select>
+                    </FormControl>
 
                     <FormControlLabel
                         control={

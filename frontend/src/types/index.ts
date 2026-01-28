@@ -81,6 +81,7 @@ export interface Project {
     customer_id: string;
     credit_approval_id: string;
     status: string; // Lifecycle state is derived
+    active_stages: string[]; // List of currently active stage IDs
     created_at: Timestamp;
     last_updated_at: Timestamp;
 }

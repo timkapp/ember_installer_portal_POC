@@ -4,6 +4,7 @@ export interface EvaluationResult {
     active_stages: string[];
     completed_sections: string[];
     visible_questions: string[];
+    visible_sections: string[]; // Added
     required_actions: RequiredAction[];
     is_eligible: boolean;
 }
@@ -31,6 +32,7 @@ export const evaluateProject = (ctx: EvaluationContext): EvaluationResult => {
             active_stages: [],
             completed_sections: [],
             visible_questions: [],
+            visible_sections: [],
             required_actions: [],
             is_eligible: false
         };
@@ -71,30 +73,77 @@ export const evaluateProject = (ctx: EvaluationContext): EvaluationResult => {
         return checkRule(q.conditional_rule);
     }).map(q => q.id);
 
-    // 3. Evaluate Section Completion (C.6)
+    // 3. Evaluate Section Visibility & Completion (C.6)
     const completedSections: string[] = [];
+    const visibleSectionIds: string[] = [];
 
+    // Filter out draft sections first
     const activeSections = sections.filter(s => s.status !== 'draft');
 
-    activeSections.forEach(section => {
-        // A section is complete if all REQUIRED, VISIBLE questions have VALID, APPROVED answers.
-        const requiredVisibleQs = section.required_question_ids.filter(qid => visibleQuestions.includes(qid));
+    // We must evaluate section visibility iteratively or just check dependencies against "completedSections"?
+    // A section is visible if its dependencies are complete.
+    // However, we don't know "completedSections" yet? 
+    // Wait, "completedSections" depends on question answers.
+    // Questions depend on "visibleQuestions".
+    // 
+    // Issue: Dependency cycle? 
+    // Section A depends on Section B. Section B must be complete.
+    // Section B completion depends on its questions being answered.
+    // 
+    // Approach:
+    // 1. Calculate completion for ALL sections (hypothetically, if they were visible).
+    //    (A section can be "complete" data-wise even if not currently visible, or we define complete = visible AND data-complete)
+    //    Actually, if a section is hidden, it cannot be "completed" in the context of stage progression usually.
+    //    BUT, for checking dependencies, we need to know if the PREREQUISITE is complete.
+    // 
+    //    So:
+    //    a. Calculate "Data Completion" for all sections (ignoring visibility for a moment, just check data).
+    //    b. Use that to determine Visibility.
+    //    c. The final "Completed Sections" list (for stage gates) should be those that are Data Complete AND Visible?
+    //       Or does a hidden section count as complete? usually NO.
+    // 
+    // Let's iterate. 
+    // Logic:
+    // A section is "Data Complete" if required questions are answered.
+    // A section is "Visible" if prerequisites are "Data Complete".
+    // 
+    // Let's try 2 passes or just calculation.
 
+    // Pass 1: Check Data Completion for ALL active sections
+    const dataCompleteSectionIds: string[] = [];
+    activeSections.forEach(section => {
+        const requiredVisibleQs = section.required_question_ids.filter(qid => visibleQuestions.includes(qid));
         const isComplete = requiredVisibleQs.every(qid => {
             const submission = submissions.find(s => s.question_id === qid);
             if (!submission) return false;
-
             // Check state
             if (submission.state === 'rejected') return false;
             // If requires approval, must be approved
             const questionDef = questions.find(q => q.id === qid);
             if (questionDef?.requires_approval && submission.state !== 'approved') return false;
-
             return submission.state !== 'empty';
         });
 
         if (isComplete) {
-            completedSections.push(section.id);
+            dataCompleteSectionIds.push(section.id);
+        }
+    });
+
+    // Pass 2: Determine Visibility based on Prerequisites
+    activeSections.forEach(section => {
+        let isVisible = true;
+        if (section.depends_on_section_ids && section.depends_on_section_ids.length > 0) {
+            // Check if all prereqs are Data Complete
+            const prereqsMet = section.depends_on_section_ids.every(id => dataCompleteSectionIds.includes(id));
+            if (!prereqsMet) isVisible = false;
+        }
+
+        if (isVisible) {
+            visibleSectionIds.push(section.id);
+            // If it's visible AND data complete, it's officially complete
+            if (dataCompleteSectionIds.includes(section.id)) {
+                completedSections.push(section.id);
+            }
         }
     });
 
@@ -191,6 +240,7 @@ export const evaluateProject = (ctx: EvaluationContext): EvaluationResult => {
         active_stages: activeStages,
         completed_sections: completedSections,
         visible_questions: visibleQuestions,
+        visible_sections: visibleSectionIds,
         required_actions: requiredActions,
         is_eligible: true
     };

@@ -4,7 +4,7 @@ import { Box, Typography, Grid, TextField, Button, Accordion, AccordionSummary, 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
-import { getProject, getProjectSections, reviewSubmission } from '../../lib/projectService';
+import { getProject, reviewSubmission, getSubmissions } from '../../lib/projectService';
 
 const ReviewProject: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -21,12 +21,30 @@ const ReviewProject: React.FC = () => {
         const load = async () => {
             if (!id) return;
             try {
-                const [proj, secs] = await Promise.all([
-                    getProject(id),
-                    getProjectSections(id)
-                ]);
+                // Fetch Project
+                const proj = await getProject(id);
                 setProject(proj);
-                setSections(secs);
+
+                // Fetch Config & Submissions
+                const [allSections, allQuestions, submissions] = await Promise.all([
+                    import('../../services/adminConfigService').then(m => m.getSections()),
+                    import('../../services/adminConfigService').then(m => m.getQuestions()),
+                    getSubmissions(id)
+                ]);
+
+                // Map answers to questions in sections
+                const hydratedSections = allSections.map(sec => {
+                    const sectionQuestions = (sec.required_question_ids || []).map((qid: string) => {
+                        const q = allQuestions.find(q => q.id === qid);
+                        if (!q) return null;
+                        const sub = submissions.find(s => s.question_id === qid);
+                        return { ...q, answer: sub ? sub.value : '' };
+                    }).filter(Boolean);
+
+                    return { ...sec, questions: sectionQuestions };
+                });
+
+                setSections(hydratedSections);
             } catch (e) {
                 console.error(e);
             } finally {
@@ -82,7 +100,7 @@ const ReviewProject: React.FC = () => {
                                     <TextField
                                         fullWidth
                                         label={q.label}
-                                        value="Sample Answer" // Mock answer
+                                        value={q.answer || ''} // Real answer
                                         InputProps={{ readOnly: true }}
                                         variant="filled"
                                     />
