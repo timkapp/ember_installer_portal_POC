@@ -113,6 +113,15 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, handleDrawerToggle }) => 
                     </ListItem>
 
                     <ListItem disablePadding>
+                        <ListItemButton
+                            selected={location.pathname === '/admin/organizations'}
+                            onClick={() => handleNavigation('/admin/organizations')}
+                        >
+                            <ListItemIcon><DashboardIcon sx={{ color: 'error.light' }} /></ListItemIcon>
+                            <ListItemText primary="Organizations" />
+                        </ListItemButton>
+                    </ListItem>
+                    <ListItem disablePadding>
                         <ListItemButton onClick={() => handleNavigation('/admin/data-collection')}>
                             <ListItemIcon><SettingsIcon sx={{ color: 'error.light' }} /></ListItemIcon>
                             <ListItemText primary="Workflow Config" secondary="Stages, Sections, Questions" secondaryTypographyProps={{ sx: { color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' } }} />

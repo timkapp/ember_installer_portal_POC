@@ -32,27 +32,31 @@ service cloud.firestore {
     }
 
     // E.4 Identity & Access
+    // E.4 Identity & Access
     match /installer_orgs/{orgId} {
       allow read: if isInstallerForOrg(orgId) || isAdmin();
-      allow write: if false; // System/Admin via Admin SDK only
+      allow write: if isAdmin(); // Allow Admin to create orgs directly (POC)
     }
 
     match /installer_accounts/{userId} {
       // Users can read their own account
       allow read: if request.auth.uid == userId || isAdmin();
-      allow write: if false; // Provisioned by admin
+      // Allow users to create their own account profile during invite acceptance
+      allow create: if request.auth.uid == userId;
+      allow update: if request.auth.uid == userId || isAdmin();
     }
 
     match /admin_accounts/{userId} {
       allow read: if request.auth.uid == userId || isAdmin(); // Admins can read other admins?
-      allow write: if false;
+      allow write: if false; // Manual setup usually
     }
 
     match /invitations/{inviteId} {
-      allow read: if isAdmin(); // Public read?? No, by token lookup usually.
-      // For invitation acceptance flow, we might need a function or open read if we query by token.
-      // But usually this is done via a Cloud Function "acceptInvitation".
-      allow write: if false;
+      // Validating invite requires finding it by token (public/unauth read)
+      allow read: if true; 
+      // Admins create invites. Users update them to Mark accepted.
+      allow create: if isAdmin();
+      allow update: if isAuthenticated(); // Simpler for POC
     }
 
     // E.5 Credit Approvals

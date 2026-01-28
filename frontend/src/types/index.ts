@@ -94,6 +94,9 @@ export interface Stage {
     section_ids: string[];
     stage_type: 'terminal' | 'reentrant';
     status: 'active' | 'draft';
+    order?: number;
+    // Determines if this stage is visible to installers in the portal override
+    isVisibleToInstaller?: boolean;
 }
 
 // B.3.5 StageAssignment (Derived)
@@ -134,6 +137,7 @@ export interface Section {
     description: string;
     required_question_ids: string[];
     optional_question_ids: string[];
+    question_order?: string[]; // Unified display order
     depends_on_section_ids?: string[];
     conditional_question_rule?: {
         question_id: string;

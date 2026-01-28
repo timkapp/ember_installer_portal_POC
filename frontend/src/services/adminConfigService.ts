@@ -1,11 +1,14 @@
 import { db } from '../lib/firebase';
-import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import type { Section, Question, Stage } from '../types';
+import { collection, getDocs, doc, setDoc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import type { Section, Question, Stage, InstallerOrganization, InstallerAccount, Invitation, Timestamp } from '../types';
 
 // Collection References
 const SECTIONS_COLLECTION = 'sections';
 const QUESTIONS_COLLECTION = 'questions';
 const STAGES_COLLECTION = 'stages';
+const ORGANIZATIONS_COLLECTION = 'installer_organizations';
+const INSTALLERS_COLLECTION = 'installer_accounts';
+const INVITATIONS_COLLECTION = 'invitations';
 
 // Logic to determine if we should use Mock (LocalStorage) or Real Firebase
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_BACKEND === 'true' ||
@@ -92,4 +95,56 @@ export const saveStage = async (stage: Stage): Promise<void> => {
 export const deleteStage = async (stageId: string): Promise<void> => {
     if (USE_MOCK) return deleteMockData(STAGES_COLLECTION, stageId);
     await deleteDoc(doc(db, STAGES_COLLECTION, stageId));
+};
+
+// --- ORGANIZATIONS ---
+export const getOrganizations = async (): Promise<InstallerOrganization[]> => {
+    if (USE_MOCK) return getMockData<InstallerOrganization>(ORGANIZATIONS_COLLECTION);
+    const snapshot = await getDocs(collection(db, ORGANIZATIONS_COLLECTION));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InstallerOrganization));
+};
+
+export const createOrganization = async (name: string): Promise<InstallerOrganization> => {
+    const id = doc(collection(db, ORGANIZATIONS_COLLECTION)).id;
+    const newOrg: InstallerOrganization = {
+        id,
+        name,
+        status: 'active',
+        created_at: USE_MOCK ? new Date() as Timestamp : serverTimestamp() as unknown as Timestamp
+    };
+
+    if (USE_MOCK) {
+        saveMockData(ORGANIZATIONS_COLLECTION, newOrg);
+        return newOrg;
+    }
+
+    await setDoc(doc(db, ORGANIZATIONS_COLLECTION, id), newOrg);
+    return newOrg;
+};
+
+// --- USERS & INVITATIONS (Admin View) ---
+export const getUsersByOrganization = async (orgId: string): Promise<InstallerAccount[]> => {
+    if (USE_MOCK) {
+        const allUsers = getMockData<InstallerAccount>(INSTALLERS_COLLECTION);
+        return allUsers.filter(u => u.organization_id === orgId);
+    }
+    const q = query(collection(db, INSTALLERS_COLLECTION), where('organization_id', '==', orgId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InstallerAccount));
+};
+
+export const getInvitationsByOrganization = async (orgId: string): Promise<Invitation[]> => {
+    if (USE_MOCK) {
+        // Mock invitations retrieval
+        try {
+            const invitationsMap = JSON.parse(localStorage.getItem('mock_invitations') || '{}');
+            const allInvitations = Object.values(invitationsMap) as Invitation[];
+            return allInvitations.filter(inv => inv.organization_id === orgId);
+        } catch {
+            return [];
+        }
+    }
+    const q = query(collection(db, INVITATIONS_COLLECTION), where('organization_id', '==', orgId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invitation));
 };

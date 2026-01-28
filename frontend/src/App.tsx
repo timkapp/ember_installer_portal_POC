@@ -17,6 +17,8 @@ const Login = () => <div>Login Page</div>;
 // Placeholder for other pages
 import ReviewDashboard from './pages/admin/ReviewDashboard';
 import ReviewProject from './pages/admin/ReviewProject';
+import OrganizationManagement from './pages/admin/OrganizationManagement';
+import AcceptInvite from './pages/auth/AcceptInvite';
 import EvaluationDebugger from './pages/debug/EvaluationDebugger';
 import ProjectList from './pages/installer/ProjectList';
 import ProjectDetail from './pages/installer/ProjectDetail';
@@ -29,6 +31,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/invite" element={<AcceptInvite />} />
 
             <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
@@ -40,6 +43,7 @@ function App() {
 
               {/* Admin Configuration Routes */}
               <Route path="admin/data-collection" element={<DataCollectionConfig />} />
+              <Route path="admin/organizations" element={<OrganizationManagement />} />
 
 
               {/* Debug */}

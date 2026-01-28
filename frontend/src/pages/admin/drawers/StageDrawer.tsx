@@ -64,6 +64,17 @@ const StageDrawer: React.FC<StageDrawerProps> = ({ open, onClose, stage, stages,
                     label={currentStage.status === 'draft' ? "Status: Draft (Paused)" : "Status: Active (Live)"}
                 />
 
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={!!currentStage.isVisibleToInstaller}
+                            onChange={(e) => setCurrentStage({ ...currentStage, isVisibleToInstaller: e.target.checked })}
+                            color="primary"
+                        />
+                    }
+                    label={currentStage.isVisibleToInstaller ? "Visible to Installer: Yes" : "Visible to Installer: No (Hidden)"}
+                />
+
                 <TextField
                     select
                     label="Stage Type"

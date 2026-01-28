@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography, Grid, TextField, Button, Accordion, AccordionSummary, AccordionDetails, Divider } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { getProject, getProjectSections, submitSection } from '../../lib/projectService';
+import { getProject, submitSection } from '../../lib/projectService';
 
 const ProjectDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -16,12 +16,43 @@ const ProjectDetail: React.FC = () => {
         const load = async () => {
             if (!id) return;
             try {
-                const [proj, secs] = await Promise.all([
-                    getProject(id),
-                    getProjectSections(id)
-                ]);
+                // Load Project (Mock)
+                const proj = await getProject(id);
                 setProject(proj);
-                setSections(secs);
+
+                // Load Config dynamically to respect Visibility Settings
+                const [allStages, allSections] = await Promise.all([
+                    import('../../services/adminConfigService').then(m => m.getStages()),
+                    import('../../services/adminConfigService').then(m => m.getSections()),
+                    import('../../services/adminConfigService').then(m => m.getQuestions())
+                ]);
+
+                // 1. Filter Visible Stages (Default to Visible if undefined)
+                const visibleStages = allStages.filter(s => s.isVisibleToInstaller !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                // 2. Collect Section IDs from Visible Stages
+                const visibleSectionIds = new Set(visibleStages.flatMap(s => s.section_ids || []));
+
+                // 3. Filter Sections
+                const visibleSections = allSections
+                    .filter(sec => visibleSectionIds.has(sec.id))
+                    // Hydrate questions for user view (merging logic from adminConfig)
+                    .map(sec => {
+                        // We need questions! Added to Promise.all above.
+                        return sec;
+                    });
+
+                // Wait, I need questions too!
+                // Let's refine the loading logic to hydrate questions.
+                const allQuestions = await import('../../services/adminConfigService').then(m => m.getQuestions());
+
+                const hydratedSections = visibleSections.map(sec => {
+                    const questionOrder = sec.question_order || [...sec.required_question_ids, ...sec.optional_question_ids];
+                    const sectionQuestions = questionOrder.map(qId => allQuestions.find(q => q.id === qId)).filter(Boolean);
+                    return { ...sec, questions: sectionQuestions };
+                });
+
+                setSections(hydratedSections);
             } catch (e) {
                 console.error(e);
             } finally {
