@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Drawer, TextField, Button, MenuItem, FormControlLabel, Switch, Typography } from '@mui/material';
+import { Box, Drawer, TextField, Button, MenuItem, FormControlLabel, Switch, Typography, IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 import { type Question, type QuestionType } from '../../../types';
 
 // Extended interface for form state
@@ -36,10 +38,12 @@ const operators = [
 const QuestionDrawer: React.FC<QuestionDrawerProps> = ({ open, onClose, question, availableQuestions, onSave }) => {
     const [localQuestion, setLocalQuestion] = useState<QuestionFormState>(question);
     const [hasCondition, setHasCondition] = useState(false);
+    const [fileTypesString, setFileTypesString] = useState('');
 
     useEffect(() => {
         setLocalQuestion(question);
         setHasCondition(!!question.conditional_rule);
+        setFileTypesString(question.allowed_file_types?.join(', ') || '');
     }, [question, open]);
 
     const handleSaveClick = () => {
@@ -114,14 +118,16 @@ const QuestionDrawer: React.FC<QuestionDrawerProps> = ({ open, onClose, question
                             helperText="Comma separated list of extensions (e.g. .pdf, .jpg)"
                             fullWidth
                             size="small"
-                            value={localQuestion.allowed_file_types?.join(', ') || ''}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                const types = val.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                            value={fileTypesString}
+                            onChange={(e) => setFileTypesString(e.target.value)}
+                            onBlur={() => {
+                                const types = fileTypesString.split(',').map(s => s.trim()).filter(s => s.length > 0);
                                 setLocalQuestion({
                                     ...localQuestion,
                                     allowed_file_types: types
                                 });
+                                // Optional: format the string back nicely on blur
+                                setFileTypesString(types.join(', '));
                             }}
                         />
                         <TextField
@@ -135,6 +141,43 @@ const QuestionDrawer: React.FC<QuestionDrawerProps> = ({ open, onClose, question
                                 max_file_size_mb: Number(e.target.value)
                             })}
                         />
+                    </Box>
+                )}
+
+
+                {localQuestion.question_type === 'select' && (
+                    <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Typography variant="subtitle2">Response Options</Typography>
+                        {(localQuestion.options || []).map((opt, idx) => (
+                            <Box key={idx} sx={{ display: 'flex', gap: 1 }}>
+                                <TextField
+                                    label="Option Label"
+                                    size="small"
+                                    value={opt.label}
+                                    onChange={(e) => {
+                                        const newOptions = [...(localQuestion.options || [])];
+                                        newOptions[idx] = { ...opt, label: e.target.value, value: e.target.value };
+                                        setLocalQuestion({ ...localQuestion, options: newOptions });
+                                    }}
+                                    fullWidth
+                                />
+                                <IconButton size="small" color="error" onClick={() => {
+                                    const newOptions = [...(localQuestion.options || [])];
+                                    newOptions.splice(idx, 1);
+                                    setLocalQuestion({ ...localQuestion, options: newOptions });
+                                }}>
+                                    <DeleteIcon />
+                                </IconButton>
+                            </Box>
+                        ))}
+                        <Button startIcon={<AddIcon />} size="small" variant="outlined" onClick={() => {
+                            setLocalQuestion({
+                                ...localQuestion,
+                                options: [...(localQuestion.options || []), { label: '', value: '' }]
+                            });
+                        }}>
+                            Add Option
+                        </Button>
                     </Box>
                 )}
 

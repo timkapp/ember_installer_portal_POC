@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, Grid, TextField, Button, Accordion, AccordionSummary, AccordionDetails, Divider } from '@mui/material';
+import { Box, Typography, Grid, TextField, Button, Accordion, AccordionSummary, AccordionDetails, Divider, MenuItem } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { getProject, submitSection } from '../../lib/projectService';
 
@@ -123,6 +123,20 @@ const ProjectDetail: React.FC = () => {
                                                 value={formData[q.id] || ''}
                                                 onChange={(e) => handleInputChange(q.id, e.target.value)}
                                             />
+                                        ) : q.question_type === 'select' ? (
+                                            <TextField
+                                                select
+                                                fullWidth
+                                                label={q.label}
+                                                value={formData[q.id] || ''}
+                                                onChange={(e) => handleInputChange(q.id, e.target.value)}
+                                            >
+                                                {(q.options || []).map((opt: any) => (
+                                                    <MenuItem key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </MenuItem>
+                                                ))}
+                                            </TextField>
                                         ) : q.question_type === 'file_upload' ? (
                                             <Box sx={{ border: '1px dashed grey', p: 2, borderRadius: 1, textAlign: 'center' }}>
                                                 <Typography variant="body2" gutterBottom>{q.label}</Typography>
